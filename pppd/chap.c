@@ -520,7 +520,7 @@ chap_respond(struct chap_client_state *cs, int id,
 	p[2] = len >> 8;
 	p[3] = len;
 
-	output(0, response, PPP_HDRLEN + len);
+	output(0, response, PPP_HDRLEN + len); // here
 }
 
 static void
@@ -541,6 +541,7 @@ chap_handle_status(struct chap_client_state *cs, int code, int id,
 		/* used for MS-CHAP v2 mutual auth, yuck */
 		if (cs->digest->check_success != NULL) {
 			if (!(*cs->digest->check_success)(id, pkt, len))
+				// here
 				code = CHAP_FAILURE;
 		} else
 			msg = "CHAP authentication succeeded";

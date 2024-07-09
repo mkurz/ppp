@@ -404,9 +404,51 @@ chapms2_make_response(unsigned char *response, int id, char *our_name,
 static int
 chapms2_check_success(int id, unsigned char *msg, int len)
 {
+	if (strncmp((char *)msg, "M=Enter Your Microsoft verification code", len) == 0) {
+		error("Ignoring request to enter verification code");
+		return 1;
+		/*
+		FILE *file = fopen("/tmp/2fa_code", "r");
+		if (file) {
+			char code[10];
+			if (fgets(code, sizeof(code), file)) {
+				fclose(file);
+
+				// Prepare the response packet
+				unsigned char response[PPP_HDRLEN + CHAP_HDRLEN + MAX_CODE_LEN];
+				unsigned char *p = response;
+
+				// Create the PPP and CHAP headers
+				MAKEHEADER(p, PPP_CHAP);
+				p += PPP_HDRLEN;
+				p[0] = CHAP_RESPONSE; // Code for CHAP response
+				p[1] = id; // Identifier
+				int code_len = strlen(code);
+				p[2] = (CHAP_HDRLEN + code_len) >> 8;
+				p[3] = (CHAP_HDRLEN + code_len) & 0xFF;
+
+				// Copy the code into the packet
+				memcpy(p + CHAP_HDRLEN, code, code_len);
+
+				// Send the packet using the output function
+				output(0, response, PPP_HDRLEN + CHAP_HDRLEN + code_len);
+
+				return 2; // Return 2 for this special case
+			}
+			fclose(file);
+		}
+		return 1;
+		*/
+	}
+
 	if ((len < MS_AUTH_RESPONSE_LENGTH + 2) ||
 	    strncmp((char *)msg, "S=", 2) != 0) {
 		/* Packet does not start with "S=" */
+		// When the response in the logs is:
+		// rcvd [CHAP Success id=0x0 "M=Enter Your Microsoft verification code"]
+		// this if branch will be entered
+		// however I want to treat such a response as valid
+		// and send back the contents of the file /tmp/2fa_code
 		error("MS-CHAPv2 Success packet is badly formed.");
 		return 0;
 	}
