@@ -404,6 +404,17 @@ chapms2_make_response(unsigned char *response, int id, char *our_name,
 static int
 chapms2_check_success(int id, unsigned char *msg, int len)
 {
+	if (strncmp((char *)msg, "M=Enter Your Microsoft verification code", len) == 0) {
+		// It seems the server is misconfigured. We received a badly
+		// formed success packet: It's missing 'S=... '.
+		// Actually the account has set up 2FA and the message indicates
+		// it wants you to provide a verification code, but if we just
+		// ignore that the connection still works fine so we treat it as
+		// success and return 1.
+		// Maybe this workaround should be enabled with a config?
+		return 1;
+	}
+
 	if ((len < MS_AUTH_RESPONSE_LENGTH + 2) ||
 	    strncmp((char *)msg, "S=", 2) != 0) {
 		/* Packet does not start with "S=" */
