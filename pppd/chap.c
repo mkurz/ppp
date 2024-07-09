@@ -520,7 +520,7 @@ chap_respond(struct chap_client_state *cs, int id,
 	p[2] = len >> 8;
 	p[3] = len;
 
-	output(0, response, PPP_HDRLEN + len);
+	output(0, response, PPP_HDRLEN + len); // here
 }
 
 static void
@@ -541,6 +541,7 @@ chap_handle_status(struct chap_client_state *cs, int code, int id,
 		/* used for MS-CHAP v2 mutual auth, yuck */
 		if (cs->digest->check_success != NULL) {
 			if (!(*cs->digest->check_success)(id, pkt, len))
+				// here
 				code = CHAP_FAILURE;
 		} else
 			msg = "CHAP authentication succeeded";
@@ -573,11 +574,33 @@ chap_input(int unit, unsigned char *pkt, int pktlen)
 	unsigned char code, id;
 	int len;
 
+	/*
+	const char *filename = "/tmp/output.bin";
+	FILE *file = fopen(filename, "wa");
+	size_t pkt_size = sizeof(pkt) / sizeof(pkt[0]);
+	fwrite(pkt, sizeof(pkt[0]), pktlen, file);
+	fclose(file);
+	*/
+
+	/*
+xxd -b /tmp/output.bin
+00000000: 00000011 00000000 00000000 00101100 01001101 00111101  ...,M=
+00000006: 01000101 01101110 01110100 01100101 01110010 00100000  Enter
+0000000c: 01011001 01101111 01110101 01110010 00100000 01001101  Your M
+00000012: 01101001 01100011 01110010 01101111 01110011 01101111  icroso
+00000018: 01100110 01110100 00100000 01110110 01100101 01110010  ft ver
+0000001e: 01101001 01100110 01101001 01100011 01100001 01110100  ificat
+00000024: 01101001 01101111 01101110 00100000 01100011 01101111  ion co
+0000002a: 01100100 01100101                                      de
+
+// This is broken according to: https://datatracker.ietf.org/doc/html/rfc2759#section-5
+	*/
+
 	if (pktlen < CHAP_HDRLEN)
 		return;
-	GETCHAR(code, pkt);
-	GETCHAR(id, pkt);
-	GETSHORT(len, pkt);
+	GETCHAR(code, pkt); // read first byte and shift pkt by one
+	GETCHAR(id, pkt);   // read second byte and shift pkt by one
+	GETSHORT(len, pkt); // read third and fourth bytes and shift pkt by two (len=44)
 	if (len < CHAP_HDRLEN || len > pktlen)
 		return;
 	len -= CHAP_HDRLEN;

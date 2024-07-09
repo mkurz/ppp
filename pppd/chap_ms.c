@@ -404,9 +404,19 @@ chapms2_make_response(unsigned char *response, int id, char *our_name,
 static int
 chapms2_check_success(int id, unsigned char *msg, int len)
 {
+	if (strncmp((char *)msg, "M=Enter Your Microsoft verification code", len) == 0) {
+		error("Ignoring request to enter verification code");
+		return 1;
+	}
+
 	if ((len < MS_AUTH_RESPONSE_LENGTH + 2) ||
 	    strncmp((char *)msg, "S=", 2) != 0) {
 		/* Packet does not start with "S=" */
+		// When the response in the logs is:
+		// rcvd [CHAP Success id=0x0 "M=Enter Your Microsoft verification code"]
+		// this if branch will be entered
+		// however I want to treat such a response as valid
+		// and send back the contents of the file /tmp/2fa_code
 		error("MS-CHAPv2 Success packet is badly formed.");
 		return 0;
 	}
